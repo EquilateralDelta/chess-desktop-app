@@ -1,7 +1,7 @@
-use chess::Game;
+use chess::{Color, Figure, Game, Tile};
 use iced::{
-    pane_grid, Align, Button, Column, Container, Element, Length, PaneGrid, Row, Sandbox, Settings,
-    Text,
+    pane_grid, Align, Button, Column, Container, Element, Image, Length, PaneGrid, Row, Sandbox,
+    Settings, Text,
 };
 
 pub fn main() -> iced::Result {
@@ -43,17 +43,17 @@ impl Sandbox for ChessApp {
 
     fn view(&mut self) -> Element<Message> {
         let mut content = Column::new();
-        for column in 1..=8 {
+        for (column, column_tiles) in self.game.field.iter().enumerate() {
             let mut row_element = Row::new();
-            for row in 1..=8 {
+            for (row, tile) in column_tiles.iter().enumerate() {
+                let image = get_image(tile).width(Length::Fill).height(Length::Fill);
                 let is_even = (column + row) % 2 == 0;
                 let tile_style = if is_even {
                     style::Tile::Even
                 } else {
                     style::Tile::Odd
                 };
-                let element = Text::new("");
-                let container = Container::new(element)
+                let container = Container::new(image)
                     .width(Length::Units(40))
                     .height(Length::Units(40))
                     .style(tile_style);
@@ -69,6 +69,27 @@ impl Sandbox for ChessApp {
             .center_x()
             .into()
     }
+}
+
+fn get_image(tile: &Tile) -> Image {
+    let path = match tile {
+        Tile::Occupied(color, figure) => match (color, figure) {
+            (Color::White, Figure::Pawn) => "images/pawn_white.png",
+            (Color::White, Figure::Knight) => "images/knight_white.png",
+            (Color::White, Figure::Bishop) => "images/bishop_white.png",
+            (Color::White, Figure::Rook) => "images/rook_white.png",
+            (Color::White, Figure::Queen) => "images/queen_white.png",
+            (Color::White, Figure::King) => "images/king_white.png",
+            (Color::Black, Figure::Pawn) => "images/pawn_black.png",
+            (Color::Black, Figure::Knight) => "images/knight_black.png",
+            (Color::Black, Figure::Bishop) => "images/bishop_black.png",
+            (Color::Black, Figure::Rook) => "images/rook_black.png",
+            (Color::Black, Figure::Queen) => "images/queen_black.png",
+            (Color::Black, Figure::King) => "images/king_black.png",
+        },
+        _ => "",
+    };
+    Image::new(path)
 }
 
 mod style {
