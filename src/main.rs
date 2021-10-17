@@ -1,5 +1,7 @@
-use chess::{Color, FieldTrait, Figure, File, Game, Position, Rank, Tile};
+use chess::{position, Color, Figure, File, Game, Position, Rank, Tile};
 use iced::{button, Button, Column, Container, Element, Image, Length, Row, Sandbox, Settings};
+
+mod styles;
 
 pub fn main() -> iced::Result {
     ChessApp::run(Settings::default())
@@ -9,6 +11,7 @@ struct ChessApp {
     game: Game,
     button_states: [[button::State; 8]; 8],
     selected: Option<Position>,
+    moves: Vec<Position>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -24,6 +27,7 @@ impl Sandbox for ChessApp {
             game: Game::new(),
             button_states: Default::default(),
             selected: Default::default(),
+            moves: Default::default(),
         }
     }
 
@@ -33,7 +37,10 @@ impl Sandbox for ChessApp {
 
     fn update(&mut self, message: Message) {
         match message {
-            Message::TileSelected(position) => self.selected = Some(position),
+            Message::TileSelected(position) => {
+                self.selected = Some(position);
+                self.moves = self.game.moves_available(position);
+            }
         }
     }
 
@@ -46,8 +53,8 @@ impl Sandbox for ChessApp {
                     rank: *rank,
                     file: *file,
                 };
-                let element =
-                    ChessApp::get_tile_element(&self.game, position, self.selected, state);
+                let style = ChessApp::get_tile_style(position, &self.moves, self.selected);
+                let element = ChessApp::get_tile_element(&self.game, position, state, style);
                 rank_elements = rank_elements.push(element);
             }
             content = content.push(rank_elements);
@@ -63,32 +70,38 @@ impl Sandbox for ChessApp {
 }
 
 impl ChessApp {
-    fn get_tile_element<'a>(
-        game: &'_ Game,
+    fn get_tile_style(
         position: Position,
-        selected_position: Option<Position>,
+        moves: &Vec<Position>,
+        selected: Option<Position>,
+    ) -> styles::Tile {
+        let is_even = (position.rank as usize + position.file as usize) % 2 == 0;
+        if moves.contains(&position) {
+            styles::Tile::Move
+        } else if selected == Some(position) {
+            styles::Tile::Selected { is_even }
+        } else {
+            styles::Tile::NonSelected { is_even }
+        }
+    }
+
+    fn get_tile_element<'a>(
+        game: &Game,
+        position: Position,
         state: &'a mut button::State,
+        style: styles::Tile,
     ) -> Button<'a, Message> {
         let tile = game.field.get(position);
         let image = ChessApp::get_tile_image(&tile)
             .width(Length::Fill)
             .height(Length::Fill);
-        let is_even = (position.rank as usize + position.file as usize) % 2 == 0;
-        let is_selected = if let Some(selected_position) = selected_position {
-            position == selected_position
-        } else {
-            false
-        };
-        let tile_style = style::Tile {
-            is_even,
-            is_selected,
-        };
+
         Button::new(state, image)
             .on_press(Message::TileSelected(position))
             .width(Length::Units(40))
             .height(Length::Units(40))
             .padding(0)
-            .style(tile_style)
+            .style(style)
     }
 
     fn get_tile_image(tile: &Tile) -> Image {
@@ -110,50 +123,5 @@ impl ChessApp {
             _ => "",
         };
         Image::new(path)
-    }
-}
-
-mod style {
-    use iced::{button, Background, Color};
-
-    const COLOR_ODD: Color = Color::from_rgb(0.694, 0.894, 0.725);
-    const COLOR_ODD_SELECTED: Color = Color::from_rgb(0.564, 0.725, 0.592);
-    const COLOR_EVEN: Color = Color::from_rgb(0.439, 0.635, 0.639);
-    const COLOR_EVEN_SELECTED: Color = Color::from_rgb(0.33, 0.53, 0.53);
-
-    pub struct Tile {
-        pub is_even: bool,
-        pub is_selected: bool,
-    }
-
-    impl Tile {
-        fn color(&self) -> Color {
-            if self.is_even {
-                if self.is_selected {
-                    COLOR_EVEN_SELECTED
-                } else {
-                    COLOR_EVEN
-                }
-            } else {
-                if self.is_selected {
-                    COLOR_ODD_SELECTED
-                } else {
-                    COLOR_ODD
-                }
-            }
-        }
-    }
-
-    impl button::StyleSheet for Tile {
-        fn active(&self) -> button::Style {
-            button::Style {
-                background: Some(Background::Color(self.color())),
-                ..button::Style::default()
-            }
-        }
-
-        fn hovered(&self) -> button::Style {
-            self.active()
-        }
     }
 }
