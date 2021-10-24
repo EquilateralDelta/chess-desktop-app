@@ -38,8 +38,14 @@ impl Sandbox for ChessApp {
     fn update(&mut self, message: Message) {
         match message {
             Message::TileSelected(position) => {
-                self.selected = Some(position);
-                self.moves = self.game.moves_available(position);
+                if self.moves.contains(&position) {
+                    self.game.make_move(self.selected.unwrap(), position);
+                    self.selected = None;
+                    self.moves = Default::default();
+                } else {
+                    self.selected = Some(position);
+                    self.moves = self.game.moves_available(position);    
+                }
             }
         }
     }
