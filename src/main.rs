@@ -1,4 +1,4 @@
-use chess::{position, Color, Figure, File, Game, Position, Rank, Tile};
+use chess::{Color, Figure, File, Game, Position, Rank, Tile};
 use iced::{button, Button, Column, Container, Element, Image, Length, Row, Sandbox, Settings};
 
 mod styles;
@@ -39,12 +39,14 @@ impl Sandbox for ChessApp {
         match message {
             Message::TileSelected(position) => {
                 if self.moves.contains(&position) {
-                    self.game.make_move(self.selected.unwrap(), position);
+                    self.game
+                        .make_move(self.selected.unwrap(), position)
+                        .unwrap();
                     self.selected = None;
                     self.moves = Default::default();
                 } else {
                     self.selected = Some(position);
-                    self.moves = self.game.moves_available(position);    
+                    self.moves = self.game.moves_available(position);
                 }
             }
         }
